@@ -9,7 +9,6 @@ import (
 
 	"github.com/d4l3k/messagediff"
 	"github.com/gogo/protobuf/proto"
-	"github.com/silesiacoin/sszutil"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
