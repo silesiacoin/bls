@@ -1,4 +1,4 @@
-module github.com/silesiacoin
+module github.com/silesiacoin/bls
 
 go 1.14
 
