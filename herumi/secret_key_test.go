@@ -4,12 +4,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/silesiacoin/common"
+	"github.com/silesiacoin/bls/common"
 
-	"github.com/silesiacoin/herumi"
-	"github.com/silesiacoin/bytesutil"
-	"github.com/silesiacoin/testutil/assert"
-	"github.com/silesiacoin/testutil/require"
+	"github.com/silesiacoin/bls/bytesutil"
+	"github.com/silesiacoin/bls/herumi"
+	"github.com/silesiacoin/bls/testutil/assert"
+	"github.com/silesiacoin/bls/testutil/require"
 )
 
 func TestMarshalUnmarshal(t *testing.T) {

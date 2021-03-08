@@ -2,13 +2,13 @@ package herumi
 
 import (
 	"fmt"
-	"github.com/silesiacoin/rand"
+	"github.com/silesiacoin/bls/rand"
 	"os"
 
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/pkg/errors"
-	"github.com/silesiacoin/common"
-	"github.com/silesiacoin/bytesutil"
+	"github.com/silesiacoin/bls/bytesutil"
+	"github.com/silesiacoin/bls/common"
 )
 
 // Signature used in the BLS signature scheme.

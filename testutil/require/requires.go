@@ -1,7 +1,7 @@
 package require
 
 import (
-	"github.com/silesiacoin/testutil/assertions"
+	"github.com/silesiacoin/bls/testutil/assertions"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 

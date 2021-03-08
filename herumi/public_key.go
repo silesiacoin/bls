@@ -7,7 +7,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/pkg/errors"
-	"github.com/silesiacoin/common"
+	"github.com/silesiacoin/bls/common"
 )
 
 var maxKeys = int64(100000)

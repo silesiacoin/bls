@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/silesiacoin/herumi"
-	"github.com/silesiacoin/testutil/assert"
-	"github.com/silesiacoin/testutil/require"
+	"github.com/silesiacoin/bls/herumi"
+	"github.com/silesiacoin/bls/testutil/assert"
+	"github.com/silesiacoin/bls/testutil/require"
 )
 
 func TestPublicKeyFromBytes(t *testing.T) {

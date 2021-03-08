@@ -1,7 +1,7 @@
 package assert
 
 import (
-	"github.com/silesiacoin/testutil/assertions"
+	"github.com/silesiacoin/bls/testutil/assertions"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
@@ -23,16 +23,6 @@ func DeepEqual(tb assertions.AssertionTestingTB, expected, actual interface{}, m
 // DeepNotEqual compares values using DeepEqual.
 func DeepNotEqual(tb assertions.AssertionTestingTB, expected, actual interface{}, msg ...interface{}) {
 	assertions.DeepNotEqual(tb.Errorf, expected, actual, msg...)
-}
-
-// DeepSSZEqual compares values using sszutil.DeepEqual.
-func DeepSSZEqual(tb assertions.AssertionTestingTB, expected, actual interface{}, msg ...interface{}) {
-	assertions.DeepSSZEqual(tb.Errorf, expected, actual, msg...)
-}
-
-// DeepNotSSZEqual compares values using sszutil.DeepEqual.
-func DeepNotSSZEqual(tb assertions.AssertionTestingTB, expected, actual interface{}, msg ...interface{}) {
-	assertions.DeepNotSSZEqual(tb.Errorf, expected, actual, msg...)
 }
 
 // NoError asserts that error is nil.

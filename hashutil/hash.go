@@ -11,7 +11,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/minio/highwayhash"
 	"github.com/minio/sha256-simd"
-	"github.com/silesiacoin/bytesutil"
+	"github.com/silesiacoin/bls/bytesutil"
 	"golang.org/x/crypto/sha3"
 )
 

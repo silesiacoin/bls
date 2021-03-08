@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
-	"github.com/silesiacoin/common"
-	"github.com/silesiacoin/testutil/assert"
-	"github.com/silesiacoin/testutil/require"
+	"github.com/silesiacoin/bls/common"
+	"github.com/silesiacoin/bls/testutil/assert"
+	"github.com/silesiacoin/bls/testutil/require"
 )
 
 func TestSignVerify(t *testing.T) {
