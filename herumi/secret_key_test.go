@@ -1,6 +1,7 @@
 package herumi_test
 
 import (
+	rand2 "crypto/rand"
 	"errors"
 	"testing"
 
@@ -11,6 +12,14 @@ import (
 	"github.com/silesiacoin/bls/testutil/assert"
 	"github.com/silesiacoin/bls/testutil/require"
 )
+
+func TestGenerateKey(t *testing.T) {
+	rand := rand2.Reader
+	public, private, err := herumi.GenerateKey(rand)
+	assert.NoError(t, err)
+	assert.NotNil(t, public)
+	assert.NotNil(t, private)
+}
 
 func TestMarshalUnmarshal(t *testing.T) {
 	priv, err := herumi.RandKey()
