@@ -28,7 +28,7 @@ func TestCompressSignVerify(t *testing.T) {
 	assert.NotNil(t, priv)
 	assert.NotNil(t, pub)
 	msg := []byte{'h', 'e', 'l', 'l', 'o'}
-	signature := vbls.Sign(priv, msg)
+	signature := Sign(priv, msg)
 	compressedSignature := signature.Compress()
 	pubKeys := make([]*vbls.PublicKey, 0)
 	pubKeys = append(pubKeys, pub)

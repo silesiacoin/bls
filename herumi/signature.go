@@ -19,6 +19,10 @@ type Signature struct {
 	s *bls12.Sign
 }
 
+func Sign(privateKey *vbls.PrivateKey, message []byte) vbls.Signature {
+	return vbls.Sign(privateKey, message)
+}
+
 // SignatureFromBytes creates a BLS signature from a LittleEndian byte slice.
 func SignatureFromBytes(sig []byte) (common.Signature, error) {
 	if "true" == os.Getenv("SKIP_BLS_VERIFY") {
