@@ -2,14 +2,17 @@ package herumi
 
 import (
 	"fmt"
-	"github.com/silesiacoin/bls/rand"
-	"os"
-
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
+	"github.com/minio/sha256-simd"
 	"github.com/pkg/errors"
 	"github.com/silesiacoin/bls/bytesutil"
 	"github.com/silesiacoin/bls/common"
+	"github.com/silesiacoin/bls/rand"
+	"os"
+	vbls "vuvuzela.io/crypto/bls"
 )
+
+const CompressedSize = 32
 
 // Signature used in the BLS signature scheme.
 type Signature struct {
@@ -147,6 +150,21 @@ func Aggregate(sigs []common.Signature) common.Signature {
 	return AggregateSignatures(sigs)
 }
 
+func (s Signature) Compress() *[CompressedSize]byte {
+	// only keep the x-coordinate
+	var compressed [CompressedSize]byte
+	compressedBytes := s.Marshal()
+	copy(compressed[:], compressedBytes[0:32])
+	return &compressed
+}
+
+// VerifyCompressed verifies a compressed aggregate signature.  Returns
+// false if messages are not distinct.
+// TODO: try to use PublicKey from herumi to achieve this
+func VerifyCompressed(keys []*vbls.PublicKey, messages [][]byte, sig *[CompressedSize]byte) bool {
+	return vbls.VerifyCompressed(keys, messages, sig)
+}
+
 // VerifyMultipleSignatures verifies a non-singular set of signatures and its respective pubkeys and messages.
 // This method provides a safe way to verify multiple signatures at once. We pick a number randomly from 1 to max
 // uint64 and then multiply the signature by it. We continue doing this for all signatures and its respective pubkeys.
@@ -215,4 +233,16 @@ func (s *Signature) Marshal() []byte {
 func (s *Signature) Copy() common.Signature {
 	sign := *s.s
 	return &Signature{s: &sign}
+}
+
+func distinct(msgs [][]byte) bool {
+	m := make(map[[32]byte]bool)
+	for _, msg := range msgs {
+		h := sha256.Sum256(msg)
+		if m[h] {
+			return false
+		}
+		m[h] = true
+	}
+	return true
 }

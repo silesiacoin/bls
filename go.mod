@@ -17,4 +17,5 @@ require (
 	github.com/sirupsen/logrus v1.8.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	golang.org/x/sys v0.0.0-20210303074136-134d130e1a04 // indirect
+	vuvuzela.io/crypto v0.0.0-20190327123840-80a93a3ed1d6
 )

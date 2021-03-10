@@ -2,7 +2,9 @@ package herumi
 
 import (
 	"fmt"
+	"io"
 	"os"
+	vbls "vuvuzela.io/crypto/bls"
 
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/pkg/errors"
@@ -12,6 +14,10 @@ import (
 // Bls12SecretKey used in the BLS signature scheme.
 type Bls12SecretKey struct {
 	p *bls12.SecretKey
+}
+
+func GenerateKey(rand io.Reader) (*vbls.PublicKey, *vbls.PrivateKey, error) {
+	return vbls.GenerateKey(rand)
 }
 
 // RandKey creates a new private key using a random method provided as an io.Reader.
