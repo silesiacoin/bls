@@ -194,7 +194,7 @@ func VerifyCompressed(keys []*PublicKey, messages [][]byte, sig *bls12.Sign) boo
 		if i == 0 {
 			sum = gt
 		} else {
-			panic("not supported yet")
+			bls12.GTInv(sum, gt)
 		}
 	}
 	gtSum := new(bls12.GT)
