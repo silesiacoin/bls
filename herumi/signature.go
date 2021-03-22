@@ -177,25 +177,18 @@ func VerifyCompressed(keys []*PublicKey, messages [][]byte, sig *bls12.Sign) boo
 	xCord := new(big.Int).SetBytes(sig.Serialize())
 	hx := new(bls12.G1)
 	bls12.CastFromSign(sig)
-	err := hx.Deserialize(xCord.Bytes())
+	err := hx.HashAndMapTo(xCord.Bytes())
 	if nil != err {
 		panic(err.Error())
 	}
 	var sum *bls12.GT
 	for i := range messages {
-		publicKeyG1 := *keys[i]
-		//h := new(bn256.G1).HashToPoint(publicKeyG1.Marshal())
-		g1casted := bls12.CastFromPublicKey(keys[i].p)
-		g1 := new(bls12.G1)
-		err := g1.Deserialize(publicKeyG1.Marshal())
-		if nil != err {
-			panic(err.Error())
-		}
 		g2 := new(bls12.G2)
-		err = g2.Deserialize(messages[i])
+		err := g2.HashAndMapTo(messages[i])
 		if nil != err {
 			panic(err.Error())
 		}
+		g1casted := bls12.CastFromPublicKey(keys[i].p)
 		gt := new(bls12.GT)
 		bls12.Pairing(gt, g1casted, g2)
 		if i == 0 {
