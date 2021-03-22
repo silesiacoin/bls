@@ -1,15 +1,12 @@
 package herumi
 
 import (
-	"crypto/rand"
 	"errors"
-	"testing"
-	vbls "vuvuzela.io/crypto/bls"
-
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/silesiacoin/bls/common"
 	"github.com/silesiacoin/bls/testutil/assert"
 	"github.com/silesiacoin/bls/testutil/require"
+	"testing"
 )
 
 func TestSignVerify(t *testing.T) {
@@ -22,19 +19,19 @@ func TestSignVerify(t *testing.T) {
 }
 
 func TestCompressSignVerify(t *testing.T) {
-	random := rand.Reader
-	pub, priv, err := GenerateKey(random)
+	priv, err := RandKey()
+	require.NoError(t, err)
+	pub := priv.PublicKey()
 	assert.NoError(t, err)
 	assert.NotNil(t, priv)
 	assert.NotNil(t, pub)
 	msg := []byte{'h', 'e', 'l', 'l', 'o'}
-	signature := Sign(priv, msg)
-	compressedSignature := signature.Compress()
-	pubKeys := make([]*vbls.PublicKey, 0)
+	signature := priv.p.Sign(string(msg))
+	pubKeys := make([]*PublicKey, 0)
 	pubKeys = append(pubKeys, pub)
 	messages := make([][]byte, 0)
 	messages = append(messages, msg)
-	valid := VerifyCompressed(pubKeys, messages, compressedSignature)
+	valid := VerifyCompressed(pubKeys, messages, signature)
 	assert.Equal(t, true, valid)
 }
 
