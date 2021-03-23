@@ -1,12 +1,14 @@
 package herumi
 
 import (
+	"crypto/rand"
 	"errors"
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/silesiacoin/bls/common"
 	"github.com/silesiacoin/bls/testutil/assert"
 	"github.com/silesiacoin/bls/testutil/require"
 	"testing"
+	vbls "vuvuzela.io/crypto/bls"
 )
 
 func TestSignVerify(t *testing.T) {
@@ -16,6 +18,49 @@ func TestSignVerify(t *testing.T) {
 	msg := []byte("hello")
 	sig := priv.Sign(msg)
 	assert.DeepEqual(t, true, sig.Verify(pub, msg))
+}
+
+func TestVuvuzelaHerumiIntegrity(t *testing.T) {
+	// Herumi keys
+	herumiPriv, err := RandKey()
+	assert.NoError(t, err)
+	herumiPublic := herumiPriv.PublicKey()
+	assert.NoError(t, err)
+	assert.NotNil(t, herumiPriv)
+	assert.NotNil(t, herumiPublic)
+	sampleMsg := []byte{'T', 'e', 's', 't'}
+
+	// Vuvuzela keys
+	random := rand.Reader
+	vuvuPublic, vuvuPriv, err := GenerateKey(random)
+	assert.NoError(t, err)
+	assert.NotNil(t, vuvuPublic)
+	assert.NotNil(t, vuvuPriv)
+
+	// Herumi flow
+	herumiSignature := herumiPriv.Sign(sampleMsg)
+	herumiVerified := herumiSignature.Verify(herumiPublic, sampleMsg)
+	assert.Equal(t, true, herumiVerified)
+	assert.Equal(t, 96, len(herumiSignature.Marshal()))
+
+	// Vuvuzela flow
+	vuvuzelaSig := vbls.Sign(vuvuPriv, sampleMsg)
+	vuvPubKeys := make([]*vbls.PublicKey, 0)
+	vuvPubKeys = append(vuvPubKeys, vuvuPublic)
+	messages := make([][]byte, 0)
+	messages = append(messages, sampleMsg)
+	vuvuzelaVerified := vbls.Verify(vuvPubKeys, messages, vuvuzelaSig)
+	assert.Equal(t, true, vuvuzelaVerified)
+	assert.Equal(t, 64, len(vuvuzelaSig[32:64]))
+
+	bls12G2 := new(bls12.G2)
+	bls12Fp2 := new(bls12.Fp2)
+	err = bls12Fp2.Deserialize(vuvuzelaSig)
+	assert.NoError(t, err)
+	err = bls12.MapToG2(bls12G2, bls12Fp2)
+	assert.NoError(t, err)
+	//err = new(vbls.PublicKey).UnmarshalBinary(ONE OF THE POINT CASTED TO BYTES)
+	//assert.NoError(t, err)
 }
 
 func TestCompressSignVerify(t *testing.T) {
