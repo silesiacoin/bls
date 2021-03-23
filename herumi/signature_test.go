@@ -5,6 +5,7 @@ import (
 	"errors"
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/silesiacoin/bls/common"
+	"github.com/silesiacoin/bls/hashutil"
 	"github.com/silesiacoin/bls/testutil/assert"
 	"github.com/silesiacoin/bls/testutil/require"
 	"testing"
@@ -53,12 +54,10 @@ func TestVuvuzelaHerumiIntegrity(t *testing.T) {
 	assert.Equal(t, true, vuvuzelaVerified)
 	assert.Equal(t, 64, len(vuvuzelaSig[32:64]))
 
-	bls12G2 := new(bls12.G2)
-	bls12Fp2 := new(bls12.Fp2)
-	err = bls12Fp2.Deserialize(vuvuzelaSig)
-	assert.NoError(t, err)
-	err = bls12.MapToG2(bls12G2, bls12Fp2)
-	assert.NoError(t, err)
+	newG2 := &bls12.G2{}
+	hash := hashutil.Hash([]byte{})
+	require.NoError(t, newG2.HashAndMapTo(hash[:]))
+
 	//err = new(vbls.PublicKey).UnmarshalBinary(ONE OF THE POINT CASTED TO BYTES)
 	//assert.NoError(t, err)
 }

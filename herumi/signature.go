@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/silesiacoin/bls/bytesutil"
 	"github.com/silesiacoin/bls/common"
+	"github.com/silesiacoin/bls/hashutil"
 	"github.com/silesiacoin/bls/rand"
 	"math/big"
 	"os"
@@ -15,8 +16,6 @@ import (
 )
 
 const CompressedSize = 32
-
-var g2gen = new(bls12.G2)
 
 // Signature used in the BLS signature scheme.
 type Signature struct {
@@ -170,6 +169,7 @@ func (s Signature) Compress() *[CompressedSize]byte {
 
 // VerifyCompressed verifies a compressed aggregate signature.  Returns
 // false if messages are not distinct.
+// TODO: we need to have Q = G and H(M) is missing there. bls12.Pairing(gtSum, hx, g2gen) - g2gen must be 1st param
 func VerifyCompressed(keys []*PublicKey, messages [][]byte, sig *bls12.Sign) bool {
 	if !distinct(messages) {
 		return false
@@ -183,6 +183,15 @@ func VerifyCompressed(keys []*PublicKey, messages [][]byte, sig *bls12.Sign) boo
 	}
 	var sum *bls12.GT
 	for i := range messages {
+		// This is Hash(Message)? - need to test and prove it
+		msgSig := &Signature{s: bls12.HashAndMapToSignature(messages[i])}
+		fmt.Print(msgSig)
+
+		// Docs are saying about 256-bit SHA hash and there he is, I don't see any specific method for message to hash
+		h := sha256.New()
+		h.Write(messages[i])
+		//fmt.Printf("%x", h.Sum(nil))
+
 		g2 := new(bls12.G2)
 		err := g2.HashAndMapTo(messages[i])
 		if nil != err {
@@ -197,6 +206,15 @@ func VerifyCompressed(keys []*PublicKey, messages [][]byte, sig *bls12.Sign) boo
 			bls12.GTInv(sum, gt)
 		}
 	}
+
+	// This should be way to prepare g2gen - need to test and prove it
+	g2gen := &bls12.G2{}
+	hash := hashutil.Hash([]byte{})
+	err = g2gen.HashAndMapTo(hash[:])
+	if nil != err {
+		panic(err.Error())
+	}
+
 	gtSum := new(bls12.GT)
 	bls12.Pairing(gtSum, hx, g2gen)
 	ub := gtSum.Serialize()
