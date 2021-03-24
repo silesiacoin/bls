@@ -85,16 +85,13 @@ func TestCompressSignVerify(t *testing.T) {
 	// Assure that we work on the same set of values each time.
 	assert.DeepEqual(t, hexSignature, sig.Marshal())
 
+	// Try to deduce how to prepare VerifyCompressed method to be able to determine if signature was valid or not
 	assert.Equal(t, 96, len(sig.Marshal()))
 	signature := sig.(*Signature)
 	signatures := make([][]byte, 3)
 	signatures[0] = signature.Marshal()[:32]
 	signatures[1] = signature.Marshal()[32:64]
 	signatures[2] = signature.Marshal()[64:96]
-
-	//signatures = append(signatures, compressedX)
-	//signatures = append(signatures, compressedY)
-	//signatures = append(signatures, compressedZ)
 
 	for _, preparedSig := range signatures {
 		var compressedType [CompressedSize]byte
