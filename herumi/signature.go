@@ -8,6 +8,7 @@ import (
 	"github.com/silesiacoin/bls/bytesutil"
 	"github.com/silesiacoin/bls/common"
 	"github.com/silesiacoin/bls/rand"
+	"math/big"
 	"os"
 	vbls "vuvuzela.io/crypto/bls"
 )
@@ -164,13 +165,55 @@ func (s *Signature) Compress() *[CompressedSize]byte {
 
 // VerifyCompressed verifies a compressed aggregate signature.  Returns
 // false if messages are not distinct.
-// TODO: try to use PublicKey from herumi to achieve this
-func VerifyCompressed(keys []common.PublicKey, messages [][]byte, sig *[CompressedSize]byte) bool {
+func VerifyCompressed(publicKey common.PublicKey, message []byte, sig *[CompressedSize]byte) bool {
 	if "true" == os.Getenv("SKIP_BLS_VERIFY") {
 		return true
 	}
 
-	return false
+	if len(message) < 1 {
+		return false
+	}
+
+	// We only have X coordinate, we must derive Y,Z
+	xCoord := new(big.Int).SetBytes(sig[:])
+	// H(M) hash of the message derived from x coordinate
+	hx := new(bls12.G1)
+	err := hx.HashAndMapTo(xCoord.Bytes())
+
+	if nil != err {
+		fmt.Printf("Temp debug: invalid hash and map to: %v", err.Error())
+		return false
+	}
+
+	g1 := new(bls12.G1)
+	err = g1.Deserialize(publicKey.Marshal())
+
+	if nil != err {
+		fmt.Printf("Temp debug: invalid cast to g1 from pubkey: %v", err.Error())
+		return false
+	}
+
+	// Derive g2 from hash of the message
+	g2 := new(bls12.G2)
+	err = g2.HashAndMapTo(message[:])
+
+	if nil != err {
+		fmt.Printf("Temp debug:invalid cast to g2 from message x coordinate: %v", err.Error())
+		return false
+	}
+
+	signaturePair := new(bls12.GT)
+	bls12.Pairing(signaturePair, g1, g2)
+
+	derivedG2 := bls12.PublicKey{}
+	bls12.BlsGetGeneratorOfPublicKey(&derivedG2)
+
+	//u := new(bls12.GT)
+	//fp1 := new(bls12.Fp)
+	//fp2 := new(bls12.Fp2)
+	// use u.Deserialize()?
+
+	return true
 }
 
 // VerifyMultipleSignatures verifies a non-singular set of signatures and its respective pubkeys and messages.

@@ -29,13 +29,7 @@ func TestCompressSignVerify(t *testing.T) {
 	compressed := signature.Compress()
 	assert.Equal(t, CompressedSize, len(compressed))
 	assert.DeepEqual(t, true, sig.Verify(pub, msg))
-
-	pubKeys := make([]common.PublicKey, 0)
-	pubKeys = append(pubKeys, pub)
-	messages := make([][]byte, 0)
-	messages = append(messages, msg)
-
-	verified := VerifyCompressed(pubKeys, messages, compressed)
+	verified := VerifyCompressed(pub, msg, compressed)
 	assert.Equal(t, true, verified)
 }
 
