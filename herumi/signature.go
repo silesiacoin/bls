@@ -1,6 +1,7 @@
 package herumi
 
 import (
+	"crypto/subtle"
 	"fmt"
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/minio/sha256-simd"
@@ -177,8 +178,8 @@ func VerifyCompressed(publicKey common.PublicKey, message []byte, sig *[Compress
 	// We only have X coordinate, we must derive Y,Z
 	xCoord := new(big.Int).SetBytes(sig[:])
 	// H(M) hash of the message derived from x coordinate
-	hx := new(bls12.G1)
-	err := hx.HashAndMapTo(xCoord.Bytes())
+	derivedG2 := new(bls12.G2)
+	err := derivedG2.HashAndMapTo(xCoord.Bytes())
 
 	if nil != err {
 		fmt.Printf("Temp debug: invalid hash and map to: %v", err.Error())
@@ -205,15 +206,31 @@ func VerifyCompressed(publicKey common.PublicKey, message []byte, sig *[Compress
 	signaturePair := new(bls12.GT)
 	bls12.Pairing(signaturePair, g1, g2)
 
-	derivedG2 := bls12.PublicKey{}
-	bls12.BlsGetGeneratorOfPublicKey(&derivedG2)
+	generatorPoint := bls12.PublicKey{}
+	bls12.BlsGetGeneratorOfPublicKey(&generatorPoint)
 
-	//u := new(bls12.GT)
-	//fp1 := new(bls12.Fp)
-	//fp2 := new(bls12.Fp2)
-	// use u.Deserialize()?
+	u := new(bls12.GT)
+	derivedG1 := new(bls12.G1)
+	err = derivedG1.Deserialize(generatorPoint.Serialize())
 
-	return true
+	if nil != err {
+		fmt.Printf("Temp debug:invalid cast to g1 from generator point: %v", err.Error())
+		return false
+	}
+
+	bls12.Pairing(u, derivedG1, derivedG2)
+
+	uBytes := u.Serialize()
+	sBytes := signaturePair.Serialize()
+	ok1 := subtle.ConstantTimeCompare(uBytes, sBytes) == 1
+
+	invertedU := new(bls12.GT)
+	bls12.GTNeg(invertedU, u)
+	invertedUBytes := invertedU.Serialize()
+
+	ok2 := subtle.ConstantTimeCompare(invertedUBytes, sBytes) == 1
+
+	return ok1 || ok2
 }
 
 // VerifyMultipleSignatures verifies a non-singular set of signatures and its respective pubkeys and messages.
