@@ -157,10 +157,10 @@ func Aggregate(sigs []common.Signature) common.Signature {
 }
 
 func (s *Signature) Compress() *[CompressedSize]byte {
-	// only keep the x-coordinate
+	// only keep the y-coordinate
 	var compressed [CompressedSize]byte
 	compressedBytes := s.Marshal()
-	copy(compressed[:], compressedBytes[0:32])
+	copy(compressed[:], compressedBytes[CompressedSize:64])
 	return &compressed
 }
 
@@ -208,7 +208,6 @@ func VerifyCompressed(publicKey common.PublicKey, message []byte, sig *[Compress
 
 	u := new(bls12.GT)
 	derivedG1 := new(bls12.G1)
-
 	pubKey := new(bls12.PublicKey)
 	bls12.BlsGetGeneratorOfPublicKey(pubKey)
 	err = derivedG1.Deserialize(pubKey.Serialize())

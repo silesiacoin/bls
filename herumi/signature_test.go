@@ -71,6 +71,14 @@ func TestCompressSignVerify(t *testing.T) {
 	bls12.BlsGetGeneratorOfPublicKey(firstGenerator)
 	assert.DeepEqual(t, generatorPubKey, firstGenerator.Serialize())
 
+	// This part will confirm that generator point is valid
+	// PublicKey = (PrivateKey x Generator Point)
+	generatorPoint := bls12.CastFromPublicKey(firstGenerator)
+	g1Outcome := new(bls12.G1)
+	fr := bls12.CastFromSecretKey(privBls)
+	bls12.G1Mul(g1Outcome, generatorPoint, fr)
+	assert.Equal(t, hexutil.Encode(pubKey1), hexutil.Encode(g1Outcome.Serialize()))
+
 	msg := common2.BigToHash(big.NewInt(56)).Bytes()
 	sig := priv.Sign(msg)
 
