@@ -21,7 +21,7 @@ func GenerateKey(rand io.Reader) (*vbls.PublicKey, *vbls.PrivateKey, error) {
 }
 
 // RandKey creates a new private key using a random method provided as an io.Reader.
-func RandKey() (common.SecretKey, error) {
+func RandKey() (*Bls12SecretKey, error) {
 	secKey := &bls12.SecretKey{}
 	secKey.SetByCSPRNG()
 	if secKey.IsZero() {
@@ -31,7 +31,7 @@ func RandKey() (common.SecretKey, error) {
 }
 
 // SecretKeyFromBytes creates a BLS private key from a BigEndian byte slice.
-func SecretKeyFromBytes(privKey []byte) (common.SecretKey, error) {
+func SecretKeyFromBytes(privKey []byte) (*Bls12SecretKey, error) {
 	if len(privKey) != 32 {
 		return nil, fmt.Errorf("secret key must be %d bytes", 32)
 	}
@@ -48,7 +48,7 @@ func SecretKeyFromBytes(privKey []byte) (common.SecretKey, error) {
 }
 
 // PublicKey obtains the public key corresponding to the BLS secret key.
-func (s *Bls12SecretKey) PublicKey() common.PublicKey {
+func (s *Bls12SecretKey) PublicKey() *PublicKey {
 	return &PublicKey{p: s.p.GetPublicKey()}
 }
 
@@ -60,7 +60,7 @@ func (s *Bls12SecretKey) PublicKey() common.PublicKey {
 //
 // In ETH2.0 specification:
 // def Sign(SK: int, message: Bytes) -> BLSSignature
-func (s *Bls12SecretKey) Sign(msg []byte) common.Signature {
+func (s *Bls12SecretKey) Sign(msg []byte) *Signature {
 	if "true" == os.Getenv("SKIP_BLS_VERIFY") {
 		return &Signature{}
 	}

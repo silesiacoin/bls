@@ -3,13 +3,13 @@ package herumi
 import (
 	"crypto/rand"
 	"errors"
-	"testing"
-	vbls "vuvuzela.io/crypto/bls"
-
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/silesiacoin/bls/common"
+	"github.com/silesiacoin/bls/hashutil"
 	"github.com/silesiacoin/bls/testutil/assert"
 	"github.com/silesiacoin/bls/testutil/require"
+	"testing"
+	vbls "vuvuzela.io/crypto/bls"
 )
 
 func TestSignVerify(t *testing.T) {
@@ -21,20 +21,61 @@ func TestSignVerify(t *testing.T) {
 	assert.DeepEqual(t, true, sig.Verify(pub, msg))
 }
 
-func TestCompressSignVerify(t *testing.T) {
+func TestVuvuzelaHerumiIntegrity(t *testing.T) {
+	// Herumi keys
+	herumiPriv, err := RandKey()
+	assert.NoError(t, err)
+	herumiPublic := herumiPriv.PublicKey()
+	assert.NoError(t, err)
+	assert.NotNil(t, herumiPriv)
+	assert.NotNil(t, herumiPublic)
+	sampleMsg := []byte{'T', 'e', 's', 't'}
+
+	// Vuvuzela keys
 	random := rand.Reader
-	pub, priv, err := GenerateKey(random)
+	vuvuPublic, vuvuPriv, err := GenerateKey(random)
+	assert.NoError(t, err)
+	assert.NotNil(t, vuvuPublic)
+	assert.NotNil(t, vuvuPriv)
+
+	// Herumi flow
+	herumiSignature := herumiPriv.Sign(sampleMsg)
+	herumiVerified := herumiSignature.Verify(herumiPublic, sampleMsg)
+	assert.Equal(t, true, herumiVerified)
+	assert.Equal(t, 96, len(herumiSignature.Marshal()))
+
+	// Vuvuzela flow
+	vuvuzelaSig := vbls.Sign(vuvuPriv, sampleMsg)
+	vuvPubKeys := make([]*vbls.PublicKey, 0)
+	vuvPubKeys = append(vuvPubKeys, vuvuPublic)
+	messages := make([][]byte, 0)
+	messages = append(messages, sampleMsg)
+	vuvuzelaVerified := vbls.Verify(vuvPubKeys, messages, vuvuzelaSig)
+	assert.Equal(t, true, vuvuzelaVerified)
+	assert.Equal(t, 64, len(vuvuzelaSig[32:64]))
+
+	newG2 := &bls12.G2{}
+	hash := hashutil.Hash([]byte{})
+	require.NoError(t, newG2.HashAndMapTo(hash[:]))
+
+	//err = new(vbls.PublicKey).UnmarshalBinary(ONE OF THE POINT CASTED TO BYTES)
+	//assert.NoError(t, err)
+}
+
+func TestCompressSignVerify(t *testing.T) {
+	priv, err := RandKey()
+	require.NoError(t, err)
+	pub := priv.PublicKey()
 	assert.NoError(t, err)
 	assert.NotNil(t, priv)
 	assert.NotNil(t, pub)
 	msg := []byte{'h', 'e', 'l', 'l', 'o'}
-	signature := Sign(priv, msg)
-	compressedSignature := signature.Compress()
-	pubKeys := make([]*vbls.PublicKey, 0)
+	signature := priv.p.Sign(string(msg))
+	pubKeys := make([]*PublicKey, 0)
 	pubKeys = append(pubKeys, pub)
 	messages := make([][]byte, 0)
 	messages = append(messages, msg)
-	valid := VerifyCompressed(pubKeys, messages, compressedSignature)
+	valid := VerifyCompressed(pubKeys, messages, signature)
 	assert.Equal(t, true, valid)
 }
 

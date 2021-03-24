@@ -1,13 +1,16 @@
 package herumi
 
 import (
+	"crypto/subtle"
 	"fmt"
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/minio/sha256-simd"
 	"github.com/pkg/errors"
 	"github.com/silesiacoin/bls/bytesutil"
 	"github.com/silesiacoin/bls/common"
+	"github.com/silesiacoin/bls/hashutil"
 	"github.com/silesiacoin/bls/rand"
+	"math/big"
 	"os"
 	vbls "vuvuzela.io/crypto/bls"
 )
@@ -156,6 +159,8 @@ func Aggregate(sigs []common.Signature) common.Signature {
 
 func (s Signature) Compress() *[CompressedSize]byte {
 	// only keep the x-coordinate
+	x := len(s.Marshal())
+	fmt.Print(x)
 	var compressed [CompressedSize]byte
 	compressedBytes := s.Marshal()
 	copy(compressed[:], compressedBytes[0:32])
@@ -164,9 +169,61 @@ func (s Signature) Compress() *[CompressedSize]byte {
 
 // VerifyCompressed verifies a compressed aggregate signature.  Returns
 // false if messages are not distinct.
-// TODO: try to use PublicKey from herumi to achieve this
-func VerifyCompressed(keys []*vbls.PublicKey, messages [][]byte, sig *[CompressedSize]byte) bool {
-	return vbls.VerifyCompressed(keys, messages, sig)
+// TODO: we need to have Q = G and H(M) is missing there. bls12.Pairing(gtSum, hx, g2gen) - g2gen must be 1st param
+func VerifyCompressed(keys []*PublicKey, messages [][]byte, sig *bls12.Sign) bool {
+	if !distinct(messages) {
+		return false
+	}
+	xCord := new(big.Int).SetBytes(sig.Serialize())
+	hx := new(bls12.G1)
+	bls12.CastFromSign(sig)
+	err := hx.HashAndMapTo(xCord.Bytes())
+	if nil != err {
+		panic(err.Error())
+	}
+	var sum *bls12.GT
+	for i := range messages {
+		// This is Hash(Message)? - need to test and prove it
+		msgSig := &Signature{s: bls12.HashAndMapToSignature(messages[i])}
+		fmt.Print(msgSig)
+
+		// Docs are saying about 256-bit SHA hash and there he is, I don't see any specific method for message to hash
+		h := sha256.New()
+		h.Write(messages[i])
+		//fmt.Printf("%x", h.Sum(nil))
+
+		g2 := new(bls12.G2)
+		err := g2.HashAndMapTo(messages[i])
+		if nil != err {
+			panic(err.Error())
+		}
+		g1casted := bls12.CastFromPublicKey(keys[i].p)
+		gt := new(bls12.GT)
+		bls12.Pairing(gt, g1casted, g2)
+		if i == 0 {
+			sum = gt
+		} else {
+			bls12.GTInv(sum, gt)
+		}
+	}
+
+	// This should be way to prepare g2gen - need to test and prove it
+	g2gen := &bls12.G2{}
+	hash := hashutil.Hash([]byte{})
+	err = g2gen.HashAndMapTo(hash[:])
+	if nil != err {
+		panic(err.Error())
+	}
+
+	gtSum := new(bls12.GT)
+	bls12.Pairing(gtSum, hx, g2gen)
+	ub := gtSum.Serialize()
+	vb := sum.Serialize()
+	ok1 := subtle.ConstantTimeCompare(ub, vb) == 1
+	uinv := new(bls12.GT)
+	uinvb := uinv.Serialize()
+	ok2 := subtle.ConstantTimeCompare(uinvb, vb) == 1
+	return ok1 || ok2
 }
 
 // VerifyMultipleSignatures verifies a non-singular set of signatures and its respective pubkeys and messages.

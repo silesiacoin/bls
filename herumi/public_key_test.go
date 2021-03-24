@@ -3,11 +3,10 @@ package herumi_test
 import (
 	"bytes"
 	"errors"
-	"testing"
-
 	"github.com/silesiacoin/bls/herumi"
 	"github.com/silesiacoin/bls/testutil/assert"
 	"github.com/silesiacoin/bls/testutil/require"
+	"testing"
 )
 
 func TestPublicKeyFromBytes(t *testing.T) {
