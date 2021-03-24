@@ -2,11 +2,13 @@ package herumi
 
 import (
 	"errors"
+	common2 "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/silesiacoin/bls/common"
 	"github.com/silesiacoin/bls/testutil/assert"
 	"github.com/silesiacoin/bls/testutil/require"
+	"math/big"
 	"testing"
 )
 
@@ -45,7 +47,7 @@ func TestSignVerify(t *testing.T) {
 func TestCompressSignVerify(t *testing.T) {
 	privKey1 := hexutil.MustDecode("0x37d5bd689ca165b212e2c26200fbe3aac907d7398bbf01afd838bfb4c5bb15d5")
 	pubKey1 := hexutil.MustDecode("0x82af1c375a5604d618d15e6cf8909651e9533f26e701be2bd6686e808ec4c7bb10ab2859f7205d49eac67c72e3cdd631")
-	hexSignature := hexutil.MustDecode("0xb28897a663e3057ba77c784afd60b1f832b1fe0f3ef11b0f3a2c7e135d293cd1784fb716355d8ad141aedaa8da9dee8b18366788fc2098eaf5218b04a5fd3be32a3bc0c47e2e1a59bbb995a547472aa3d737706b03d7fe7a9e812bb1f44f6b19")
+	hexSignature := hexutil.MustDecode("0x8e542829726129846f78919a4802a17aed62e15e89ab1d77050aa4e7772e37b60cbb596027c62ee5389ad895331fc33500f86c2094d1ff7c25ebdb4f722f272b1d83eff3ab90c3169154039b17635f4fff377bb6ab2206b4d50f176c2b58c562")
 
 	priv := new(Bls12SecretKey)
 	privBls := new(bls12.SecretKey)
@@ -60,7 +62,7 @@ func TestCompressSignVerify(t *testing.T) {
 	err = pub.p.Deserialize(pubKey1)
 	assert.NoError(t, err)
 
-	msg := []byte("hello")
+	msg := common2.BigToHash(big.NewInt(56)).Bytes()
 	sig := priv.Sign(msg)
 
 	// Assure that we work on the same set of values each time.
