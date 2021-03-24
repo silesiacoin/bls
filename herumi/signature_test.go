@@ -2,6 +2,7 @@ package herumi
 
 import (
 	"errors"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/silesiacoin/bls/common"
 	"github.com/silesiacoin/bls/testutil/assert"
@@ -15,15 +16,56 @@ func TestSignVerify(t *testing.T) {
 	pub := priv.PublicKey()
 	msg := []byte("hello")
 	sig := priv.Sign(msg)
+
+	privKey := priv.(*Bls12SecretKey)
+	pubKey := pub.(*PublicKey)
+
+	hexStringPrivKey := hexutil.Encode(privKey.Marshal())
+	hexStringPubKey := hexutil.Encode(pubKey.Marshal())
+
+	assert.NotNil(t, hexStringPrivKey)
+	assert.NotNil(t, hexStringPubKey)
+
+	// hexStringPrivKey 0x37d5bd689ca165b212e2c26200fbe3aac907d7398bbf01afd838bfb4c5bb15d5
+	// HexStringPubKey 0x82af1c375a5604d618d15e6cf8909651e9533f26e701be2bd6686e808ec4c7bb10ab2859f7205d49eac67c72e3cdd631
+
+	privKey1 := hexutil.MustDecode(hexStringPrivKey)
+	pubKey1 := hexutil.MustDecode(hexStringPubKey)
+
+	privKeyBls := new(bls12.SecretKey)
+	err = privKeyBls.Deserialize(privKey1)
+	assert.NoError(t, err)
+
+	pubkeyBls := new(bls12.PublicKey)
+	err = pubkeyBls.Deserialize(pubKey1)
+	assert.NoError(t, err)
 	assert.DeepEqual(t, true, sig.Verify(pub, msg))
 }
 
 func TestCompressSignVerify(t *testing.T) {
-	priv, err := RandKey()
-	require.NoError(t, err)
-	pub := priv.PublicKey()
+	privKey1 := hexutil.MustDecode("0x37d5bd689ca165b212e2c26200fbe3aac907d7398bbf01afd838bfb4c5bb15d5")
+	pubKey1 := hexutil.MustDecode("0x82af1c375a5604d618d15e6cf8909651e9533f26e701be2bd6686e808ec4c7bb10ab2859f7205d49eac67c72e3cdd631")
+	hexSignature := hexutil.MustDecode("0xb28897a663e3057ba77c784afd60b1f832b1fe0f3ef11b0f3a2c7e135d293cd1784fb716355d8ad141aedaa8da9dee8b18366788fc2098eaf5218b04a5fd3be32a3bc0c47e2e1a59bbb995a547472aa3d737706b03d7fe7a9e812bb1f44f6b19")
+
+	priv := new(Bls12SecretKey)
+	privBls := new(bls12.SecretKey)
+	priv.p = privBls
+	err := priv.p.Deserialize(privKey1)
+	assert.NoError(t, err)
+
+	pub := new(PublicKey)
+	pubBls := new(bls12.PublicKey)
+	pub.p = pubBls
+
+	err = pub.p.Deserialize(pubKey1)
+	assert.NoError(t, err)
+
 	msg := []byte("hello")
 	sig := priv.Sign(msg)
+
+	// Assure that we work on the same set of values each time.
+	assert.DeepEqual(t, hexSignature, sig.Marshal())
+
 	assert.Equal(t, 96, len(sig.Marshal()))
 	signature := sig.(*Signature)
 	compressed := signature.Compress()

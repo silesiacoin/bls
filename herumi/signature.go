@@ -206,17 +206,17 @@ func VerifyCompressed(publicKey common.PublicKey, message []byte, sig *[Compress
 	signaturePair := new(bls12.GT)
 	bls12.Pairing(signaturePair, g1, g2)
 
-	generatorPoint := bls12.PublicKey{}
-	bls12.BlsGetGeneratorOfPublicKey(&generatorPoint)
-
 	u := new(bls12.GT)
 	derivedG1 := new(bls12.G1)
-	err = derivedG1.Deserialize(generatorPoint.Serialize())
 
-	if nil != err {
-		fmt.Printf("Temp debug:invalid cast to g1 from generator point: %v", err.Error())
-		return false
-	}
+	//secretKey := bls12.CastFromPublicKey(publicKey)
+
+	//err = derivedG1.Deserialize(generatorPoint.Serialize())
+	//
+	//if nil != err {
+	//	fmt.Printf("Temp debug:invalid cast to g1 from generator point: %v", err.Error())
+	//	return false
+	//}
 
 	bls12.Pairing(u, derivedG1, derivedG2)
 
