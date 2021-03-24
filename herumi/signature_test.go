@@ -1,15 +1,12 @@
 package herumi
 
 import (
-	"crypto/rand"
 	"errors"
-	"testing"
-	vbls "vuvuzela.io/crypto/bls"
-
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/silesiacoin/bls/common"
 	"github.com/silesiacoin/bls/testutil/assert"
 	"github.com/silesiacoin/bls/testutil/require"
+	"testing"
 )
 
 func TestSignVerify(t *testing.T) {
@@ -22,20 +19,24 @@ func TestSignVerify(t *testing.T) {
 }
 
 func TestCompressSignVerify(t *testing.T) {
-	random := rand.Reader
-	pub, priv, err := GenerateKey(random)
-	assert.NoError(t, err)
-	assert.NotNil(t, priv)
-	assert.NotNil(t, pub)
-	msg := []byte{'h', 'e', 'l', 'l', 'o'}
-	signature := Sign(priv, msg)
-	compressedSignature := signature.Compress()
-	pubKeys := make([]*vbls.PublicKey, 0)
+	priv, err := RandKey()
+	require.NoError(t, err)
+	pub := priv.PublicKey()
+	msg := []byte("hello")
+	sig := priv.Sign(msg)
+	assert.Equal(t, 96, len(sig.Marshal()))
+	signature := sig.(*Signature)
+	compressed := signature.Compress()
+	assert.Equal(t, CompressedSize, len(compressed))
+	assert.DeepEqual(t, true, sig.Verify(pub, msg))
+
+	pubKeys := make([]common.PublicKey, 0)
 	pubKeys = append(pubKeys, pub)
 	messages := make([][]byte, 0)
 	messages = append(messages, msg)
-	valid := VerifyCompressed(pubKeys, messages, compressedSignature)
-	assert.Equal(t, true, valid)
+
+	verified := VerifyCompressed(pubKeys, messages, compressed)
+	assert.Equal(t, true, verified)
 }
 
 func TestAggregateVerify(t *testing.T) {
