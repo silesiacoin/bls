@@ -87,11 +87,26 @@ func TestCompressSignVerify(t *testing.T) {
 
 	assert.Equal(t, 96, len(sig.Marshal()))
 	signature := sig.(*Signature)
-	compressed := signature.Compress()
-	assert.Equal(t, CompressedSize, len(compressed))
-	assert.DeepEqual(t, true, sig.Verify(pub, msg))
-	verified := VerifyCompressed(pub, msg, compressed)
-	assert.Equal(t, true, verified)
+	signatures := make([][]byte, 3)
+	signatures[0] = signature.Marshal()[:32]
+	signatures[1] = signature.Marshal()[32:64]
+	signatures[2] = signature.Marshal()[64:96]
+
+	//signatures = append(signatures, compressedX)
+	//signatures = append(signatures, compressedY)
+	//signatures = append(signatures, compressedZ)
+
+	for _, preparedSig := range signatures {
+		var compressedType [CompressedSize]byte
+		copy(compressedType[:], preparedSig[:CompressedSize])
+		verified := VerifyCompressed(pub, msg, &compressedType)
+
+		if verified {
+			panic("Oh shit, it works")
+		}
+
+		assert.Equal(t, true, verified)
+	}
 }
 
 func TestAggregateVerify(t *testing.T) {
