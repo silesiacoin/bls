@@ -177,7 +177,7 @@ func VerifyCompressed(publicKey common.PublicKey, message []byte, sig *[Compress
 
 	// We only have X coordinate, we must derive Y,Z
 	xCoord := new(big.Int).SetBytes(sig[:])
-	// H(M) hash of the message derived from x coordinate
+	// H(M) hash of the signature derived from x coordinate
 	derivedG2 := new(bls12.G2)
 	err := derivedG2.HashAndMapTo(xCoord.Bytes())
 
@@ -209,14 +209,14 @@ func VerifyCompressed(publicKey common.PublicKey, message []byte, sig *[Compress
 	u := new(bls12.GT)
 	derivedG1 := new(bls12.G1)
 
-	//secretKey := bls12.CastFromPublicKey(publicKey)
+	pubKey := new(bls12.PublicKey)
+	bls12.BlsGetGeneratorOfPublicKey(pubKey)
+	err = derivedG1.Deserialize(pubKey.Serialize())
 
-	//err = derivedG1.Deserialize(generatorPoint.Serialize())
-	//
-	//if nil != err {
-	//	fmt.Printf("Temp debug:invalid cast to g1 from generator point: %v", err.Error())
-	//	return false
-	//}
+	if nil != err {
+		fmt.Printf("Temp debug: invalid derivedG1 cast from public key: %v", err.Error())
+		return false
+	}
 
 	bls12.Pairing(u, derivedG1, derivedG2)
 

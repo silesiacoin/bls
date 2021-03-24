@@ -48,6 +48,9 @@ func TestCompressSignVerify(t *testing.T) {
 	privKey1 := hexutil.MustDecode("0x37d5bd689ca165b212e2c26200fbe3aac907d7398bbf01afd838bfb4c5bb15d5")
 	pubKey1 := hexutil.MustDecode("0x82af1c375a5604d618d15e6cf8909651e9533f26e701be2bd6686e808ec4c7bb10ab2859f7205d49eac67c72e3cdd631")
 	hexSignature := hexutil.MustDecode("0x8e542829726129846f78919a4802a17aed62e15e89ab1d77050aa4e7772e37b60cbb596027c62ee5389ad895331fc33500f86c2094d1ff7c25ebdb4f722f272b1d83eff3ab90c3169154039b17635f4fff377bb6ab2206b4d50f176c2b58c562")
+	//hashOfXWithinSignature := hexutil.MustDecode("0x90095fcc94b90406e9072f648290f9c1bb5057595bddb4bb6cfae250250358cdf93c503e2c3bcdff7c623caac4683e03122a021357614d0d6e4a3b5dbab509d22f2fab50b8f2b18ad3b2a85ca614b7eafc88667746af8a5c72677c0ecead8a42")
+	//hashOfMessage := hexutil.MustDecode("0xb9f44d5ffd045ca58dca2c711692fadf16b7fa5a4fd5c38b4b7bedb3ea67cfc587902e0b65078ac1c996c39ee351a80508188e87247fbf6f56e236d18521699e0c38c35c9e6ae65e81602dbbdb7a155eb21790a427232d682daf3ec3cb1ef569")
+	generatorPubKey := hexutil.MustDecode("0x97f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb")
 
 	priv := new(Bls12SecretKey)
 	privBls := new(bls12.SecretKey)
@@ -61,6 +64,12 @@ func TestCompressSignVerify(t *testing.T) {
 
 	err = pub.p.Deserialize(pubKey1)
 	assert.NoError(t, err)
+
+	// This part confirms that bls generator point is retrieved and is static
+	firstGenerator := new(bls12.PublicKey)
+	err = firstGenerator.Deserialize(pubBls.Serialize())
+	bls12.BlsGetGeneratorOfPublicKey(firstGenerator)
+	assert.DeepEqual(t, generatorPubKey, firstGenerator.Serialize())
 
 	msg := common2.BigToHash(big.NewInt(56)).Bytes()
 	sig := priv.Sign(msg)
