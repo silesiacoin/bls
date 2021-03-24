@@ -204,6 +204,7 @@ func VerifyCompressed(publicKey common.PublicKey, message []byte, sig *[Compress
 	}
 
 	signaturePair := new(bls12.GT)
+	// e(sQ, H(m))
 	bls12.Pairing(signaturePair, g1, g2)
 
 	u := new(bls12.GT)
@@ -217,6 +218,9 @@ func VerifyCompressed(publicKey common.PublicKey, message []byte, sig *[Compress
 		return false
 	}
 
+	// verify ; e(sQ, H(m)) = e(Q, s H(m))
+
+	// e(Q, s H(m))
 	bls12.Pairing(u, derivedG1, derivedG2)
 
 	uBytes := u.Serialize()
