@@ -223,6 +223,9 @@ func VerifyCompressed(publicKey common.PublicKey, message []byte, sig *[Compress
 	// e(Q, s H(m))
 	bls12.Pairing(u, derivedG1, derivedG2)
 
+	// Here I casted. TODO: this should be try out with `Verify()` method
+	//castedSignature := bls12.CastToSign(derivedG2)
+
 	uBytes := u.Serialize()
 	sBytes := signaturePair.Serialize()
 	constantTimeCompare1 := subtle.ConstantTimeCompare(uBytes, sBytes)
