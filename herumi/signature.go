@@ -1,6 +1,7 @@
 package herumi
 
 import (
+	"crypto/subtle"
 	"fmt"
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/minio/sha256-simd"
@@ -8,6 +9,7 @@ import (
 	"github.com/silesiacoin/bls/bytesutil"
 	"github.com/silesiacoin/bls/common"
 	"github.com/silesiacoin/bls/rand"
+	"math/big"
 	"os"
 	vbls "vuvuzela.io/crypto/bls"
 )
@@ -154,19 +156,89 @@ func Aggregate(sigs []common.Signature) common.Signature {
 	return AggregateSignatures(sigs)
 }
 
-func (s Signature) Compress() *[CompressedSize]byte {
+func (s *Signature) Compress() *[CompressedSize]byte {
 	// only keep the x-coordinate
 	var compressed [CompressedSize]byte
 	compressedBytes := s.Marshal()
-	copy(compressed[:], compressedBytes[0:32])
+	copy(compressed[:], compressedBytes[:CompressedSize])
 	return &compressed
 }
 
 // VerifyCompressed verifies a compressed aggregate signature.  Returns
 // false if messages are not distinct.
-// TODO: try to use PublicKey from herumi to achieve this
-func VerifyCompressed(keys []*vbls.PublicKey, messages [][]byte, sig *[CompressedSize]byte) bool {
-	return vbls.VerifyCompressed(keys, messages, sig)
+func VerifyCompressed(publicKey common.PublicKey, message []byte, sig *[CompressedSize]byte) bool {
+	if "true" == os.Getenv("SKIP_BLS_VERIFY") {
+		return true
+	}
+
+	if len(message) < 1 {
+		return false
+	}
+
+	// We only have X coordinate, we must derive Y,Z
+	xCoord := new(big.Int).SetBytes(sig[:])
+	// H(M) hash of the signature derived from x coordinate
+	derivedG2 := new(bls12.G2)
+	err := derivedG2.HashAndMapTo(xCoord.Bytes())
+
+	if nil != err {
+		fmt.Printf("Temp debug: invalid hash and map to: %v", err.Error())
+		return false
+	}
+
+	g1 := new(bls12.G1)
+	err = g1.Deserialize(publicKey.Marshal())
+
+	if nil != err {
+		fmt.Printf("Temp debug: invalid cast to g1 from pubkey: %v", err.Error())
+		return false
+	}
+
+	// Derive g2 from hash of the message
+	g2 := new(bls12.G2)
+	err = g2.HashAndMapTo(message[:])
+
+	if nil != err {
+		fmt.Printf("Temp debug:invalid cast to g2 from message x coordinate: %v", err.Error())
+		return false
+	}
+
+	signaturePair := new(bls12.GT)
+	// e(sQ, H(m))
+	bls12.Pairing(signaturePair, g1, g2)
+
+	u := new(bls12.GT)
+	derivedG1 := new(bls12.G1)
+	pubKey := new(bls12.PublicKey)
+	bls12.BlsGetGeneratorOfPublicKey(pubKey)
+	err = derivedG1.Deserialize(pubKey.Serialize())
+
+	if nil != err {
+		fmt.Printf("Temp debug: invalid derivedG1 cast from public key: %v", err.Error())
+		return false
+	}
+
+	// verify ; e(sQ, H(m)) = e(Q, s H(m))
+
+	// e(Q, s H(m))
+	bls12.Pairing(u, derivedG1, derivedG2)
+
+	// Here I casted. TODO: this should be try out with `Verify()` method
+	//castedSignature := bls12.CastToSign(derivedG2)
+
+	uBytes := u.Serialize()
+	sBytes := signaturePair.Serialize()
+	constantTimeCompare1 := subtle.ConstantTimeCompare(uBytes, sBytes)
+	ok1 := constantTimeCompare1 == 1
+
+	invertedU := new(bls12.GT)
+	bls12.GTNeg(invertedU, u)
+	invertedUBytes := invertedU.Serialize()
+
+	constantTimeCompare2 := subtle.ConstantTimeCompare(invertedUBytes, sBytes)
+	ok2 := constantTimeCompare2 == 1
+
+	return ok1 || ok2
 }
 
 // VerifyMultipleSignatures verifies a non-singular set of signatures and its respective pubkeys and messages.

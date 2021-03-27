@@ -1,15 +1,15 @@
 package herumi
 
 import (
-	"crypto/rand"
 	"errors"
-	"testing"
-	vbls "vuvuzela.io/crypto/bls"
-
+	common2 "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	bls12 "github.com/herumi/bls-eth-go-binary/bls"
 	"github.com/silesiacoin/bls/common"
 	"github.com/silesiacoin/bls/testutil/assert"
 	"github.com/silesiacoin/bls/testutil/require"
+	"math/big"
+	"testing"
 )
 
 func TestSignVerify(t *testing.T) {
@@ -18,24 +18,92 @@ func TestSignVerify(t *testing.T) {
 	pub := priv.PublicKey()
 	msg := []byte("hello")
 	sig := priv.Sign(msg)
+
+	privKey := priv.(*Bls12SecretKey)
+	pubKey := pub.(*PublicKey)
+
+	hexStringPrivKey := hexutil.Encode(privKey.Marshal())
+	hexStringPubKey := hexutil.Encode(pubKey.Marshal())
+
+	assert.NotNil(t, hexStringPrivKey)
+	assert.NotNil(t, hexStringPubKey)
+
+	// hexStringPrivKey 0x37d5bd689ca165b212e2c26200fbe3aac907d7398bbf01afd838bfb4c5bb15d5
+	// HexStringPubKey 0x82af1c375a5604d618d15e6cf8909651e9533f26e701be2bd6686e808ec4c7bb10ab2859f7205d49eac67c72e3cdd631
+
+	privKey1 := hexutil.MustDecode(hexStringPrivKey)
+	pubKey1 := hexutil.MustDecode(hexStringPubKey)
+
+	privKeyBls := new(bls12.SecretKey)
+	err = privKeyBls.Deserialize(privKey1)
+	assert.NoError(t, err)
+
+	pubkeyBls := new(bls12.PublicKey)
+	err = pubkeyBls.Deserialize(pubKey1)
+	assert.NoError(t, err)
 	assert.DeepEqual(t, true, sig.Verify(pub, msg))
 }
 
 func TestCompressSignVerify(t *testing.T) {
-	random := rand.Reader
-	pub, priv, err := GenerateKey(random)
+	privKey1 := hexutil.MustDecode("0x37d5bd689ca165b212e2c26200fbe3aac907d7398bbf01afd838bfb4c5bb15d5")
+	pubKey1 := hexutil.MustDecode("0x82af1c375a5604d618d15e6cf8909651e9533f26e701be2bd6686e808ec4c7bb10ab2859f7205d49eac67c72e3cdd631")
+	hexSignature := hexutil.MustDecode("0x8e542829726129846f78919a4802a17aed62e15e89ab1d77050aa4e7772e37b60cbb596027c62ee5389ad895331fc33500f86c2094d1ff7c25ebdb4f722f272b1d83eff3ab90c3169154039b17635f4fff377bb6ab2206b4d50f176c2b58c562")
+	//hashOfXWithinSignature := hexutil.MustDecode("0x90095fcc94b90406e9072f648290f9c1bb5057595bddb4bb6cfae250250358cdf93c503e2c3bcdff7c623caac4683e03122a021357614d0d6e4a3b5dbab509d22f2fab50b8f2b18ad3b2a85ca614b7eafc88667746af8a5c72677c0ecead8a42")
+	//hashOfMessage := hexutil.MustDecode("0xb9f44d5ffd045ca58dca2c711692fadf16b7fa5a4fd5c38b4b7bedb3ea67cfc587902e0b65078ac1c996c39ee351a80508188e87247fbf6f56e236d18521699e0c38c35c9e6ae65e81602dbbdb7a155eb21790a427232d682daf3ec3cb1ef569")
+	generatorPubKey := hexutil.MustDecode("0x97f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb")
+
+	priv := new(Bls12SecretKey)
+	privBls := new(bls12.SecretKey)
+	priv.p = privBls
+	err := priv.p.Deserialize(privKey1)
 	assert.NoError(t, err)
-	assert.NotNil(t, priv)
-	assert.NotNil(t, pub)
-	msg := []byte{'h', 'e', 'l', 'l', 'o'}
-	signature := Sign(priv, msg)
-	compressedSignature := signature.Compress()
-	pubKeys := make([]*vbls.PublicKey, 0)
-	pubKeys = append(pubKeys, pub)
-	messages := make([][]byte, 0)
-	messages = append(messages, msg)
-	valid := VerifyCompressed(pubKeys, messages, compressedSignature)
-	assert.Equal(t, true, valid)
+
+	pub := new(PublicKey)
+	pubBls := new(bls12.PublicKey)
+	pub.p = pubBls
+
+	err = pub.p.Deserialize(pubKey1)
+	assert.NoError(t, err)
+
+	// This part confirms that bls generator point is retrieved and is static
+	firstGenerator := new(bls12.PublicKey)
+	err = firstGenerator.Deserialize(pubBls.Serialize())
+	bls12.BlsGetGeneratorOfPublicKey(firstGenerator)
+	assert.DeepEqual(t, generatorPubKey, firstGenerator.Serialize())
+
+	// This part will confirm that generator point is valid
+	// PublicKey = (PrivateKey x Generator Point)
+	generatorPoint := bls12.CastFromPublicKey(firstGenerator)
+	g1Outcome := new(bls12.G1)
+	fr := bls12.CastFromSecretKey(privBls)
+	bls12.G1Mul(g1Outcome, generatorPoint, fr)
+	assert.Equal(t, hexutil.Encode(pubKey1), hexutil.Encode(g1Outcome.Serialize()))
+
+	msg := common2.BigToHash(big.NewInt(56)).Bytes()
+	sig := priv.Sign(msg)
+
+	// Assure that we work on the same set of values each time.
+	assert.DeepEqual(t, hexSignature, sig.Marshal())
+
+	// Try to deduce how to prepare VerifyCompressed method to be able to determine if signature was valid or not
+	assert.Equal(t, 96, len(sig.Marshal()))
+	signature := sig.(*Signature)
+	signatures := make([][]byte, 3)
+	signatures[0] = signature.Marshal()[:32]
+	signatures[1] = signature.Marshal()[32:64]
+	signatures[2] = signature.Marshal()[64:96]
+
+	for _, preparedSig := range signatures {
+		var compressedType [CompressedSize]byte
+		copy(compressedType[:], preparedSig[:CompressedSize])
+		verified := VerifyCompressed(pub, msg, &compressedType)
+
+		if verified {
+			panic("Oh shit, it works")
+		}
+
+		assert.Equal(t, true, verified)
+	}
 }
 
 func TestAggregateVerify(t *testing.T) {

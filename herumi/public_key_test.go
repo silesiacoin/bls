@@ -2,8 +2,10 @@ package herumi_test
 
 import (
 	"bytes"
+	rand2 "crypto/rand"
 	"errors"
 	"testing"
+	vbls "vuvuzela.io/crypto/bls"
 
 	"github.com/silesiacoin/bls/herumi"
 	"github.com/silesiacoin/bls/testutil/assert"
@@ -73,4 +75,23 @@ func TestPublicKey_Copy(t *testing.T) {
 	if !bytes.Equal(pubkeyA.Marshal(), pubkeyBytes) {
 		t.Fatal("Pubkey was mutated after copy")
 	}
+}
+
+func TestPublicKey_FromVuvuzela(t *testing.T) {
+	rand := rand2.Reader
+	pubkey, privKey, err := vbls.GenerateKey(rand)
+
+	assert.NoError(t, err)
+	pubkeyBytes, err := pubkey.MarshalBinary()
+	assert.NoError(t, err)
+	// Should be 48 bytes..
+	assert.Equal(t, 128, len(pubkeyBytes))
+
+	msg := []byte{'h', 'e', 'l', 'l', 'o'}
+	messages := make([][]byte, 0)
+	messages = append(messages, msg)
+
+	signature := vbls.Sign(privKey, msg)
+	assert.Equal(t, 64, len(signature))
+	//	 TODO: try to transpile privateKey from vuvuzela into bls12
 }
