@@ -8,7 +8,7 @@ require (
 	github.com/ethereum/go-ethereum v1.10.0
 	github.com/ferranbt/fastssz v0.0.0-20210120143747-11b9eff30ea9
 	github.com/gogo/protobuf v1.3.2
-	github.com/herumi/bls-eth-go-binary v0.0.0-20210302070600-dfaa902c7773
+	github.com/herumi/bls-eth-go-binary v0.0.0-20210407105559-9588dcfc7de7
 	github.com/magefile/mage v1.11.0 // indirect
 	github.com/minio/highwayhash v1.0.1
 	github.com/minio/sha256-simd v1.0.0
